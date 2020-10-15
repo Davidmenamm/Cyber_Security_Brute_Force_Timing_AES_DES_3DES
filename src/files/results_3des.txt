@@ -1,0 +1,4 @@
+-------------Results--------------
+Threads Created: 250
+Total iterations: 186315
+Average decrypt time: 0.0138ms

@@ -1,3 +1,5 @@
+package des;
+
 import java.security.MessageDigest;
 import java.security.spec.KeySpec;
 import java.util.Arrays;
@@ -81,7 +83,7 @@ public class Encrypter {
             return new String(utf8, "UTF8");
 
         } catch (BadPaddingException e) {
-            System.err.println("Wrong key used");
+//            System.err.println("Wrong key used");
         } catch (Exception e) {
             e.printStackTrace();
         }

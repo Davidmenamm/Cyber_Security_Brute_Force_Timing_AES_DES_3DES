@@ -1,22 +1,33 @@
-import javax.crypto.BadPaddingException;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Random;
+import java.util.Scanner;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public class BruteForceTimer {
-    public static int BLOCK_NUM = 2;
+    public static int THREAD_NUM = 250;
     public static int UPPER_BOUND = 100000;
+    public static int TIME_LIMIT = 1;
+    public static String path = System.getProperty("user.dir") + "/src/files/";
+    public static String plainTextFile = "plaintext.txt";
+    public static String cipherTextFile = "ciphertext.txt";
+    public static String resultsTextFile = "results_3des.txt";
 
     public static void main(String[] args) {
-        String message = "Attack at Dawn";
+        String message = getFileContent(path + plainTextFile);
 
         // Generate random Secret Key
-        Random rand = new Random();
-        Integer randInt = rand.nextInt(UPPER_BOUND);
+        Integer randInt = getRandomKey();
         String key = randInt.toString();
 
         // Generate random ivString
         String ivString = getRandomString();
 
-        System.out.println("Original key: " + key);
+        System.out.println("Secret Key: " + key);
         System.out.println("Random ivString: " + ivString);
 
         Encrypter desEncrypter = new Encrypter(key, ivString);
@@ -29,11 +40,53 @@ public class BruteForceTimer {
 
         System.out.println("Encrypted Text: " + encryptedText);
 
-        System.out.println("\n\n-------------3DES DEcryption----------");
+        writeInFile(path + cipherTextFile, encryptedText);
 
-        for(int i = 0; i < BLOCK_NUM; i++){
-            new EncrypterThread(encryptedText, ivString).start();
+
+        System.out.println("\n\n-------------3DES DEcryption----------");
+        startBruteForceAttack(encryptedText, ivString);
+    }
+
+    public static void startBruteForceAttack(String encryptedText, String ivString) {
+        System.out.println("Starting brute force attack...");
+        // Decrypted text
+        long startTimeDecrypt = System.currentTimeMillis();
+
+        ExecutorService es = Executors.newCachedThreadPool();
+
+        int threadNum = 0;
+        for(int i = 0; i < THREAD_NUM; i++){
+            es.execute(new EncrypterThread(encryptedText, ivString));
+            threadNum++;
         }
+        es.shutdown();
+
+        try {
+            boolean threadsFinished = es.awaitTermination(TIME_LIMIT, TimeUnit.HOURS);
+
+            if(threadsFinished) {
+                System.out.println("-------------Results--------------");
+                System.out.println("Threads Created: " + threadNum);
+                System.out.println("Total iterations: " + EncrypterThread.iterations);
+
+                long endTimeDecrypt = System.currentTimeMillis();
+
+                double decryptionTime = ( endTimeDecrypt - startTimeDecrypt );
+
+                System.out.println("Average decrypt time: " + String.format("%.4f", (decryptionTime / (EncrypterThread.iterations))) + "ms");
+
+                String resultsString = "-------------Results--------------" + "\n" + "Threads Created: " + threadNum + "\n" + "Total iterations: " + EncrypterThread.iterations + "\n" + "Average decrypt time: " + String.format("%.4f", (decryptionTime / (EncrypterThread.iterations))) + "ms";
+                writeInFile(path + resultsTextFile, resultsString);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Generates random key number
+    public static Integer getRandomKey() {
+        Random rand = new Random();
+        return rand.nextInt(UPPER_BOUND);
     }
 
     public static String getRandomString() {
@@ -50,5 +103,33 @@ public class BruteForceTimer {
         String generatedString = buffer.toString();
 
         return generatedString;
+    }
+
+    // Obtiene el contenido de un archivo
+    public static String getFileContent(String filePath) {
+        StringBuilder sb = new StringBuilder("");
+
+        File myObj = new File(filePath);
+        try (Scanner myReader = new Scanner(myObj)) {
+            while (myReader.hasNextLine()) {
+                sb.append(myReader.nextLine());
+            }
+        } catch (FileNotFoundException e) {
+            System.err.println("An error occurred while reading the file: " + filePath);
+            e.printStackTrace();
+            return "";
+        }
+
+        return sb.toString();
+    }
+
+    // Escribe el mensaje encriptado en un archivo
+    public static void writeInFile(String filePath, String text) {
+        try (FileWriter myWriter = new FileWriter(filePath)) {
+            myWriter.write(text);
+        } catch (IOException e) {
+            System.err.println("An error occurred while writing in file: " + filePath);
+            e.printStackTrace();
+        }
     }
 }
