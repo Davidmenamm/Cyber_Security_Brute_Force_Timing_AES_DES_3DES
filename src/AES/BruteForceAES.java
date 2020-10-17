@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class BruteForceAES {
     // Attributes
     private int threadCount = 8;
-//    private String passToGenKeys;
+    //    private String passToGenKeys;
     private int totalIterations = 200000;
     private int keyLen = 256;
 
@@ -29,34 +29,22 @@ public class BruteForceAES {
     public void runBruteForce(){
         // Init timer
         long start = System.currentTimeMillis();
-
-        // Encrypt
-        // key is 32 bytes / 32 characters / 256 bits
-        AESThread first = new AESThread("DavidMenaMadrid1DavidMenaMadrid1","aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                totalIterations/threadCount, keyLen);
-        try{
-            // plain text is 16 bytes / 16 characters / 128 bits
-            first.encrypt("Abcdefghijklmnop");
-        } catch(Exception except){
-            except.printStackTrace();
-        }
         // Generate thread pool
         ExecutorService  exServ = Executors.newCachedThreadPool();
         for (int iterate = 0; iterate < threadCount; iterate++){
             // both keys must be 32 characters / 32 bytes long
-            exServ.execute(new AESThread("DavidMenaMadrid1DavidMenaMadrid1","aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                    totalIterations/threadCount, keyLen));
+            exServ.execute(new AESThread("DavidMenaMadrid1","aaaaaaaaaaaaaaaa",
+                    1000/*Num Rounds Algorithm*/, keyLen, totalIterations/threadCount));
         }
         // shut down threads once they are completed
         exServ.shutdown();
         // join or wait threads
         try {
-            boolean threadsReady = exServ.awaitTermination(15, TimeUnit.MINUTES);
+            boolean threadsReady = exServ.awaitTermination(12, TimeUnit.MINUTES);
             if (threadsReady){
                 // End Timer
                 long end = System.currentTimeMillis();
                 double timeRange = ( end - start );
-
                 // Results
                 System.out.println("-------------Results--------------");
                 System.out.println("Threads Created: " + threadCount);
